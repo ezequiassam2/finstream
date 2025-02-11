@@ -118,6 +118,6 @@ env/
 .env.bak
 
 #ide
-.idea
+.idea/
 
 data/raw
