@@ -117,4 +117,7 @@ venv/
 env/
 .env.bak
 
+#ide
+.idea/
+
 data/raw
