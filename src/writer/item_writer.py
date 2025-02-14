@@ -1,15 +1,29 @@
 import logging
 
+from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import sessionmaker
+
+from src.utilities.config import DATABASE_URL
+from .model import Base
+
 
 class ItemWriter:
-    def __init__(self, engine_url='sqlite:///transacoes.db'):  # TODO: Adicionar suporte do bancos de dados
-        # self.engine = db.create_engine(engine_url)
-        self.engine = None
+    def __init__(self):
+        self.engine = create_engine(DATABASE_URL)
+        Base.metadata.create_all(self.engine)
+        self.Session = sessionmaker(bind=self.engine)
 
-    def write(self, df):
-        print(df)
-        return
-        if not df.empty:
-            with self.engine.begin() as connection:
-                df.to_sql('transacoes', con=connection, if_exists='append', index=False)
-                logging.info("Dados inseridos no banco de dados com sucesso.")
+    def save(self, data):
+        session = self.Session()
+        try:
+            with session.begin():
+                if isinstance(data, list):
+                    session.add_all(data)
+                else:
+                    session.add(data)
+            logging.info("Objeto inserido com sucesso.")
+        except SQLAlchemyError as e:
+            logging.error(f"Erro ao inserir objeto: {e}")
+        finally:
+            session.close()

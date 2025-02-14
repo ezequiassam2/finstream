@@ -1,31 +1,23 @@
-import logging
 import re
 
-from .parsing_strategy import ParsingStrategy
+from ..parsing_report_strategy import ParsingStrategy
 
 
 class ParseVSS110(ParsingStrategy):
     PATTERN_HEADER_TABLE = r"CREDIT\s+DEBIT\s+TOTAL|COUNT\s+AMOUNT\s+AMOUNT\s+AMOUNT"
 
-    def parse(self, content):
-        logging.info("Iniciando parse do VSS-110")
-        report = self.parse_report(content)
-        logging.info("Parse do VSS-110 concluído")
-        return report
-
-    def parse_report(self, content):
+    def parse_content(self, content):
         lines = content.strip().splitlines()
         current_section = None
         current_report = {}
 
         for line in lines:
-            line = self.clean_line(line)
+            line = self.strip(line)
             if self.is_empty_line(line) or self.is_end_report(line) or self.is_header_table(line):
                 continue
 
             if self.is_no_data(line):
-                current_report = {"NO DATA": []}
-                break
+                return current_report
 
             if self.is_form_data(line):
                 self.parse_header_line(line, current_report)

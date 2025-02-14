@@ -1,8 +1,7 @@
 import logging
-import re
 
-from .strategies.parse_vss110 import ParseVSS110
-from .strategies.parsing_strategy import ParsingStrategy
+from .strategies.parses.parse_vss110 import ParseVSS110
+from .strategies.parsing_report_strategy import ParsingStrategy
 
 
 class ItemProcessor:

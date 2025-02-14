@@ -1,4 +1,7 @@
+import logging
 import re
+
+from .convert_model import convert_amount
 
 
 class ParsingStrategy:
@@ -15,17 +18,17 @@ class ParsingStrategy:
         if match:
             return match.group(1)
 
-    def clean_line(self, line):
+    def strip(self, line):
         return line.strip()
 
     def is_empty_line(self, line):
-        return not self.clean_line(line)
+        return not self.strip(line)
 
     def is_end_report(self, line):
-        return "*** END OF VSS-110 REPORT ***" in self.clean_line(line)
+        return "*** END OF VSS-110 REPORT ***" in self.strip(line)
 
     def is_no_data(self, line):
-        return "*** NO DATA FOR THIS REPORT ***" in self.clean_line(line)
+        return "*** NO DATA FOR THIS REPORT ***" in self.strip(line)
 
     def is_form_data(self, line):
         return re.match(self.PATTERN_FORM_DATA, line)
@@ -48,5 +51,15 @@ class ParsingStrategy:
                 current_report["REPORT_HEADER"]["SUMMARY"].append(match.group("report_names").strip())
         return current_report
 
+    def parse_content(self, content):
+        raise NotImplementedError("parse_content não implementado")
+
     def parse(self, content):
-        raise NotImplementedError("Deve ser implementado por subclasses.")
+        report_id = self.get_report_id(content)
+        logging.info(f"Iniciando parse do {report_id}")
+        parsed_content = self.parse_content(content)
+        if not parsed_content:
+            logging.info(f"Sem dados para {report_id}")
+            return
+        logging.info(f"Parse do {report_id} concluído")
+        return convert_amount(parsed_content)
