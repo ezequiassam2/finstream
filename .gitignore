@@ -119,5 +119,6 @@ env/
 
 #ide
 .idea/
+.DS_Store
 
 data/raw
