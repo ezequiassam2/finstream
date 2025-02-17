@@ -62,3 +62,53 @@ Este projeto foi estruturado de maneira modular para processar arquivos TXT e JS
 ### Execução e Performance
 
 **Execute** todos os passos conforme descrito, assegurando que o processamento é otimizado para performance, tanto em termos de tempo com processamento paralelo, quanto de memória com leitura linha a linha. Implemente logs detalhados para visualizar o desempenho e possíveis gargalos.
+
+
+
+*Introdução Geral**
+Elabore um projeto em Python que realize o processamento de relatórios financeiros, onde será lido um arquivo txt que contem vários tipos de relatórios com os totalizadores e vários arquivos json que contem as transações. Inicie o projeto adotando as boas práticas de engenharia de software que incluem, mas não se limitam a, design modular, código limpo, documentação clara e uso coerente de padrões de projeto. Certifique-se de que cada módulo ou componente seja coeso e que os acoplamentos entre eles sejam minimizados para facilitar a manutenção, escalabilidade e reutilização do código. Lembre de adicionar uma documentação de código informando do que se trata cada arquivo/classe contendo resumidamente as técnicas ali abordadas.
+
+**Estrutura do Projeto**
+- **Diretório `finstream`**
+- **Descrição**: Raiz do projeto, onde terá os demais arquivos relevantes mais o main onde será o ponto de entrada.
+- **Técnicas**: Crie Readme, requirements, arquivos de docker com as configurações de um banco postgres, .env e outros se necessário
+- 
+- **Diretório `core/models`**
+- **Descrição**: Modelos de dados para representar as informações extraídas dos relatórios e transações.
+  - **Técnicas**: [Crie um arquivo schemas para definir os modelos de dados criando as classes Report(report_id: str,reporting_for: str,page: int,proc_date: datetime,rollup_to: str,report_date: datetime,funds_xfer_entity: str,settlement_currency: str,summary: List[str],amounts: List[Amount(section: str, label: str, count: Decimal, credit_amount: Decimal, debit_amount: Decimal, total_amount: Decimal)]);  Utilize as validações de pydantic para conversão no parser; Utilize indices em campos chaves; A relação entre tabelas deve ser otimizada para performace em grandes processamentos, os campos DECIMAL devem ter precisão e escalas definidas;]
+
+- **Diretório `core/strategies`**
+- **Descrição**: Padrão de projeto Strategy para implementar diferentes estratégias de parsing para cada tipo de relatório.
+- **Técnicas**: Crie arquivo base_strategy(class ParsingStrategy) e use reflection para carregar strategies dinamicamente estendido como Factory Method. Implemente auto-registro de classes que herdam ParsingStrategy. O ParsingStrategy deve conter metodos abristratos, como parse_header e parse_amounts, além de ter um metodo que gerencia o parse executando coisas comuns em todos os relatorios. Crie um arquivo para cada tipo de relatório, como VSS-110, e implemente a lógica de parsing específica para cada um.
+
+- **Diretório `core/utils`**
+- **Descrição**: Utilidades e configurações globais.
+- **Técnicas**: Configure o looging para gerar logs estruturados de execução e erros. Em todos os lugares necessários devem utilizar essas configurações de log contextual. O log deve ser salvo em um arquivo, separando em erros e infos por exemplos. Crie um arquivo de lógica de retry para tentar novamente a execução de um bloco de código que falhou.
+
+- **Diretório `etl/reader`**
+- **Descrição**: Leitura de arquivos
+- **Técnicas**: Use Streaming para ler arquivos grandes, evitando carregar todo o arquivo na memória. Deve ler pedaços(seção) a pedaço  e processar imediatamente, minimizando o uso de memória.
+
+- **Diretório `etl/processor`**
+- **Descrição**: Transformação + validação
+- **Técnicas**: Deve seguir o padrão pipeline transform. Utilize retry para tentar novamente a execução de um bloco de código que falhou. Gerencie os passos do processemento, gerenciando exceções de forma apropriada, registrando erros e não permitindo a continuação do processamento. O processamento será feito para cada seção de forma atomica, garantindo que se uma seção falhar, as demais seções sejam processadas. Caso apresente erro deve ser adicionado em algo semelhante ao Dead Letter Queue para posterior analise.
+- **Diretório `etl/write`**
+- **Descrição**: Bulk insert otimizado
+- **Técnicas**: Deve inserir os dados em um banco de dados de forma otimizada, utilizando transações e bulk insert. Utilize o SQLAlchemy para gerenciar a conexão com o banco de dados e a inserção de dados.
+
+- **Diretório `orchestrator`**
+- **Descrição**: Controle de fluxo
+- **Técnicas**: Utilize a Arquitetura Produtor-Consumidor tendo um Controle de fluxo com fila., Orquestre o processamento de arquivos txt e json, utilizando o processamento em paralelo para distribuir o processamento em diferentes segmentos de arquivo e recuperando dinamicamente o fluxo de processamento de acordo com o tipo do arquivo.
+
+- **Diretório `tests`**
+- **Descrição**: Testes automatizados
+- **Técnicas**: Crie os testes para garantir a qualidade do código. Utilize o Pytest para escrever e executar testes. Garanta cobertura de funcionalidades críticas.
+
+**Revisão Final**
+Após a geração de todos os componentes solicitados, revisite cada parte do projeto para garantir que todos os requisitos foram atendidos e que o código segue as práticas recomendadas de engenharia de software. Certifique-se de incluir quaisquer ajustes necessários para melhorar a eficiência, legibilidade e manutenção do código.
+
+**Sugestões de Melhoria**
+No final do projeto, analise o que pode ser melhorado, considerando:
+- Reorganização da estrutura do código para aumentar a eficiência.
+- Melhorias de desempenho e otimizações potenciais.
+- Outras práticas que poderiam ser adotadas para melhorar a qualidade do software.
