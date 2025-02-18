@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from pydantic import BaseModel, validator
 
@@ -8,17 +8,23 @@ from pydantic import BaseModel, validator
 class AmountSchema(BaseModel):
     section: str
     label: str
-    count: Decimal
-    credit_amount: Decimal
-    debit_amount: Decimal
-    total_amount: Decimal
+    processing_date: Optional[datetime] = None
+    processing_count: Optional[Decimal] = None
+    transaction_amount: Optional[Decimal] = None
+    interchange_fee: Optional[Decimal] = None
+    processing_charge: Optional[Decimal] = None
+    settlement_amount: Optional[Decimal] = None
+    data: Optional[Dict] = {}
 
-    @validator('count', 'credit_amount', 'debit_amount', 'total_amount', pre=True)
+    @validator('processing_count', 'transaction_amount', 'interchange_fee', 'processing_charge', 'settlement_amount',
+               pre=True)
     def parse_currency(cls, value):
+        if value is None:
+            return None
         value_str = str(value).strip()
         is_debit = "DB" in value_str
 
-        # Remove todos os sufixos não numéricos
+        # Remove all non-numeric suffixes
         clean_value = ''.join([c for c in value_str if c.isdigit() or c in ('.', '-')])
 
         try:
@@ -28,6 +34,17 @@ class AmountSchema(BaseModel):
 
         return -decimal_value if is_debit else decimal_value
 
+    @validator('processing_date', pre=True)
+    def parse_dates(cls, value):
+        return datetime.strptime(value, "%d%b%y") if value else None
+
+    @validator('data', pre=True)
+    def validate_data(cls, value):
+        if isinstance(value, dict):
+            for k, v in value.items():
+                if any(char.isdigit() for char in str(v)):
+                    value[k] = float(cls.parse_currency(v))
+        return value
 
 class ReportSchema(BaseModel):
     report_id: str

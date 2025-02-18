@@ -5,8 +5,8 @@ from core.models.schemas import ReportSchema
 
 
 class ParsingStrategy(ABC):
-    HEADER_PATTERN = r"^(.*?):\s{2,}(.*?)(?=\s{2,}|$)"
-    HEADER_FORM = r"(?P<key>((\w+\s)?){1,2}\w+):\s+(?P<value>.+?)(?=\s{3,}|$)|(?:\s{3,})(?P<summary>[\w\s]+)(?=\s{3,}|$)"
+    HEADER_PATTERN = r"(.*?):\s*(.*?)(?=\s{2,}|$)"
+    HEADER_FORM = r"(?P<key>((\w+\s)?){1,2}\w+):\s*(?P<value>.+?)(?=\s{3,}|$)|(?:\s{3,})(?P<summary>[\w\s]+)(?=\s{3,}|$)"
     SECTION_PATTERN = r"^\f?[A-Z\s]+$"
 
     @abstractmethod
@@ -24,15 +24,15 @@ class ParsingStrategy(ABC):
         header, amounts, current_section = {'summary': []}, [], None
 
         for line in content.strip().splitlines():
-            line = line.strip()
-            if not line:
+            if not line.strip():
                 continue
             if '***' in line:
                 break
             if re.match(self.HEADER_PATTERN, line):
                 self.parse_header(line, header)
+                current_section = line.strip()
             elif re.match(self.SECTION_PATTERN, line):
-                current_section = line
+                current_section = line.strip()
             elif current_section and any(c.isdigit() for c in line):
                 self.parse_body(line, amounts, current_section)
 
