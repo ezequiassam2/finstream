@@ -23,14 +23,15 @@ class BatchOrchestrator:
         file_type = file_path.split('.')[-1].lower()
         return self.strategies.get(file_type).get(run)
 
-    def _process_txt_segment(self, data: str, processor, writer, section_count):
-        processed_data = processor.process(data, section_count)
+    def _process_txt_segment(self, data, processor, writer, section_count):
+        processed_data = processor.process_report(data, section_count)
         if processed_data:
             writer.save_report(processed_data)
 
-    def _process_json_file(self, data: str, processor, writer, section_count):
-        processed_data = processor.process(data, section_count)
-        writer.save_report(processed_data)
+    def _process_json_file(self, data, processor, writer, section_count):
+        processed_data = processor.process_transaction(data, section_count)
+        if processed_data:
+            writer.save_transaction(processed_data)
 
     @retry(max_attempts=3, delay=1)
     def _consumer(self, processor, writer):

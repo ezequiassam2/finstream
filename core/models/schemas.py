@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 from typing import List, Optional, Dict
 
@@ -65,3 +65,61 @@ class ReportSchema(BaseModel):
     @validator('*', pre=True)
     def parse_raw(cls, value):
         return value.strip() if isinstance(value, str) else value
+
+
+class TransactionSchema(BaseModel): #todo fazer validação para add transaction_type
+    source: str
+    source_date: date
+    dest_currency: int
+    arn: str
+    slice_code: str
+    cardbrandid: str
+    externalid: str
+    local_date: date
+    authorization_date: date
+    purchase_value: Decimal
+    clearing_debit: Decimal
+    installment_nbr: Decimal
+    clearing_installment: Decimal
+    installment_value_1: Decimal
+    installment_value_n: Decimal
+    clearing_value: Decimal
+    issuer_exchange_rate: Decimal
+    clearing_commission: Decimal
+    clearing_interchange_fee_sign: str
+    qualifier: str
+    bin_card: str
+    acquirer_id: int
+    mcc: int
+    dest_value: Decimal
+    boarding_fee: Decimal
+    status: int
+    operation_type: str
+    cdt_amount: Decimal
+    product_code: str
+    operation_code: str
+    reason_code: str
+    pan: str
+    late_presentation: int
+    entry_mode: str
+    pos_entry_mode: str
+    clearing_files_row_id: int
+    clearing_currency: int
+    clearing_boarding_fee: Decimal
+    clearing_settlement_date: date
+    clearing_presentation: Decimal
+    clearing_action_code: Decimal
+    clearing_total_partial_transaction: Decimal
+    clearing_flag_partial_settlement: Decimal
+    clearing_cancel: Decimal
+    clearing_confirm: Decimal
+    clearing_add: Decimal
+    clearing_credit: Decimal
+
+    @validator('*', pre=True)
+    def parse_raw(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+    @validator('source_date', 'local_date',  'authorization_date',  'clearing_settlement_date', pre=True)
+    def parse_date(cls, value):
+        return datetime.strptime(value, "%y-%b-%d").date() if value else None

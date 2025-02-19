@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from core.models.database import Report, Amount, Base
+from core.models.database import Report, Amount, Base, Transaction
 from core.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -13,6 +13,7 @@ class DBWriter:
 
     def save_report(self, data: dict):
         session = self.Session()
+        report_id = data.get("report_id")
         try:
             report = Report(**{k: v for k, v in data.items() if k != 'amounts'})
             session.add(report)
@@ -22,8 +23,24 @@ class DBWriter:
             session.bulk_save_objects(amounts)
             session.commit()
         except Exception as e:
-            logger.error(f"Erro ao salvar: {e}")
+            logger.error(f"Erro ao salvar relatorio {report_id}: {e}")
             session.rollback()
             raise
         finally:
+            logger.info(f"Relatorio {report_id} salvo com sucesso.")
+            session.close()
+
+    def save_transaction(self, data: dict):
+        session = self.Session()
+        mcc = data.get("mcc")
+        try:
+            transaction = Transaction(**data)
+            session.add(transaction)
+            session.commit()
+        except Exception as e:
+            logger.error(f"Erro ao salvar transação {mcc}: {e}")
+            session.rollback()
+            raise
+        finally:
+            logger.info(f"Transação {mcc} salva com sucesso.")
             session.close()
