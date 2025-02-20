@@ -32,14 +32,14 @@ class DBWriter:
 
     def save_transaction(self, data: dict):
         session = self.Session()
-        mcc = data.get("mcc")
+        arn = data.get("arn")
         try:
             transaction = Transaction(**data)
             session.add(transaction)
             session.commit()
-            logger.info(f"Transação {mcc} salva com sucesso.")
+            logger.info(f"Transação {arn} salva com sucesso.")
         except Exception as e:
-            logger.error(f"Erro ao salvar transação {mcc}: {e}")
+            logger.error(f"Erro ao salvar transação {arn}: {e}")
             session.rollback()
             raise
         finally:

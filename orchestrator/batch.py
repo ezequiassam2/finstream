@@ -1,11 +1,14 @@
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
-from typing import List, Callable, Any, Optional, Dict
+from typing import List, Callable, Optional, Dict
 
 from core.utils.logger import get_logger
 from core.utils.retry import retry
+from etl.processor.data_processor import DataProcessor
 from etl.reader.file_reader import FileReader
+from etl.writer.db_writer import DBWriter
 
 logger = get_logger(__name__)
 
@@ -26,7 +29,7 @@ class BatchOrchestrator:
 
     def __init__(self, max_consumers: int = 4):
         self.max_consumers = max_consumers
-        self.progress: Dict[str, Dict[str, int]] = {}  # {file_path: {'total': X, 'processed': Y}}
+        self.progress: Dict[str, Dict[str, int]] = {}
         self.lock = threading.Lock()
         self.task_queue = Queue()
         self.file_reader = FileReader()
@@ -47,38 +50,59 @@ class BatchOrchestrator:
             raise ValueError(f"Estratégia não encontrada para o arquivo {file_path}")
         return strategy.get(run)
 
-    def _process_txt_segment(self, data: str, processor: Any, writer: Any, section_count: int) -> None:
+    def _update_progress(self, file_path: str, total=0) -> None:
+        """Atualiza o progresso de processamento de um arquivo.."""
+        with self.lock:
+            if self.progress.get(file_path) is None:
+                self.progress[file_path] = {'total': total, 'processed': 0}
+                logger.info(f"Start Progresso {file_path.split('/')[-1]}: {0}/{total} ({0:.1f}%)")
+            self.progress[file_path]['processed'] += 1
+
+    def _log_progress(self) -> None:
+        """Loga o progresso atual em intervalos regulares."""
+        while not self.done.is_set():
+            time.sleep(5)
+            with self.lock:
+                for file_path, stats in self.progress.items():
+                    total = stats['total']
+                    processed = stats['processed']
+                    percent = (processed / total * 100) if total > 0 else 0
+                    logger.info(f"Progresso {file_path.split('/')[-1]}: {processed}/{total} ({percent:.1f}%)")
+
+    def _process_txt_segment(self, content: dict, processor: DataProcessor, writer: DBWriter) -> None:
         """
-        Processa um segmento de arquivo txt.
+        Processa um segmento de arquivo TXT.
         """
-        processed_data = processor.process_report(data, section_count)
+        processed_data = processor.process_report(content)
         if processed_data:
             writer.save_report(processed_data)
 
-    def _process_json_file(self, data: dict, processor: Any, writer: Any, section_count: int) -> None:
+    def _process_json_file(self, content: dict, processor: DataProcessor, writer: DBWriter) -> None:
         """
-        Processa um segmento de arquivo json.
+        Processa um segmento de arquivo JSON.
         """
-        processed_data = processor.process_transaction(data, section_count)
+        processed_data = processor.process_transaction(content)
         if processed_data:
             writer.save_transaction(processed_data)
 
     @retry(max_attempts=3, delay=1)
-    def _consumer(self, processor: Any, writer: Any) -> None:
+    def _consumer(self, processor: DataProcessor, writer: DBWriter) -> None:
         """
-        Consome tarefas da fila e processa cada uma com a estratégia apropriada.
+        Consome tarefas da fila e processa cada seção com a estratégia apropriada.
         """
         while True:
             task = self.task_queue.get()
-            if task is None:  # Sinal para encerrar
+            if task is None:
                 self.task_queue.task_done()
                 break
-            file_path, data, section_count = task
+            file_path, content, section_id = task
             try:
-                strategy = self._get_strategy(file_path)
-                strategy(data, processor, writer, section_count)
+                self._update_progress(file_path, content.get('total', 0))
+                process = self._get_strategy(file_path)
+                process(content, processor, writer)
             except Exception as e:
-                logger.error(f"Falha ao processar segmento {section_count} do arquivo {file_path}: {str(e)}")
+                if not self.task_queue.empty():
+                    logger.error(f"Falha ao processar seção {section_id} do arquivo {file_path}: {str(e)}")
             finally:
                 self.task_queue.task_done()
 
@@ -87,35 +111,48 @@ class BatchOrchestrator:
         Lê arquivos e coloca os dados na fila para serem processados pelos consumidores.
         """
         for file_path in files:
+            if self.done.is_set():
+                logger.info(f"Fim da importação do arquivo: {file_path}")
+                break
             try:
                 reader = self._get_strategy(file_path, 'reader')
-                section_count = 0
                 logger.info(f"Importando arquivo: {file_path}")
-                for data in reader(file_path):
-                    section_count += 1
-                    self.task_queue.put((file_path, data, section_count))
-                logger.info(f"Fim da importação do arquivo: {file_path}")
+                for content in reader(file_path):
+                    self.task_queue.put((file_path, content, content.get("section_id", 0)))
             except Exception as e:
                 logger.error(f"Falha ao ler {file_path}: {str(e)}")
+                self.done.set()
 
-    def run(self, files: List[str], processor: Any, writer: Any) -> None:
+    def run(self, files: List[str], processor: DataProcessor, writer: DBWriter) -> None:
         """
-        Inicia o processamento dos arquivos.
+        Inicia o processamento dos arquivos em lote.
         """
-        # Inicia consumidores
-        with ThreadPoolExecutor(max_workers=self.max_consumers) as executor:
-            consumers = [executor.submit(self._consumer, processor, writer) for _ in range(self.max_consumers)]
+        self.start_time = time.time()
+        progress_thread = threading.Thread(target=self._log_progress)
+        progress_thread.start()
 
-            # Inicia produtor em thread separada
-            producer_thread = threading.Thread(target=self._producer, args=(files,))
-            producer_thread.start()
-            producer_thread.join()  # Espera o produtor terminar
+        try:
+            with ThreadPoolExecutor(max_workers=self.max_consumers) as executor:
+                # Inicia consumidores
+                consumers = [executor.submit(self._consumer, processor, writer) for _ in range(self.max_consumers)]
 
-            # Sinaliza fim para consumidores
-            for _ in range(self.max_consumers):
-                self.task_queue.put(None)
+                # Inicia produtor em thread separada
+                producer_thread = threading.Thread(target=self._producer, args=(files,))
+                producer_thread.start()
+                producer_thread.join()
 
-            # Espera todos os consumidores finalizarem
-            self.task_queue.join()
-            for future in consumers:
-                future.result()
+                # Sinaliza fim para consumidores
+                for _ in range(self.max_consumers):
+                    self.task_queue.put(None)
+
+                # Aguarda conclusão da fila
+                self.task_queue.join()
+                self.done.set()
+                for future in consumers:
+                    future.result()
+        except Exception as e:
+            logger.error(f"Erro crítico: {str(e)}")
+            self.done.set()
+        finally:
+            progress_thread.join()
+            logger.info(f"Tempo total: {time.time() - self.start_time:.2f}s")
