@@ -49,7 +49,7 @@ class FileReader:
                         section_num += 1
                 else:
                     buffer.append(line)
-            yield self._build_section(buffer, section_num, section_id, total)
+            yield self._build_section(buffer, section_num, section_id if section_id else re.match(self.pattern_report_id, ''.join(buffer)).group(1), total)
 
     def _count_txt_sections_parallel(self, file_path: str) -> int:
         """Conta seções em paralelo usando mmap."""
