@@ -1,5 +1,4 @@
-
-from sqlalchemy import Column, Integer, String, DateTime,Date, ForeignKey, DECIMAL, JSON, Index, func
+from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, DECIMAL, JSON, Index, func, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -12,7 +11,7 @@ class ModelRepository(Base):
 
 class Report(ModelRepository):
     __tablename__ = 'reports'
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     report_id = Column(String(50), index=True)
     reporting_for = Column(String, index=True)
     page = Column(Integer)
@@ -29,7 +28,7 @@ class Report(ModelRepository):
 
 class Amount(ModelRepository):
     __tablename__ = 'amounts'
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     report_id = Column(Integer, ForeignKey('reports.id', ondelete="CASCADE"), index=True)
     section = Column(String, index=True)
     label = Column(String)
@@ -44,16 +43,16 @@ class Amount(ModelRepository):
 
 class Transaction(ModelRepository):
     __tablename__ = 'transactions'
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     source = Column(String(50), nullable=False)
     source_date = Column(Date, nullable=False, index=True)
-    dest_currency = Column(Integer, nullable=False)
-    arn = Column(String, unique=True, index=True)
+    dest_currency = Column(Integer, nullable=False, index=True)
+    arn = Column(String, index=True)
     slice_code = Column(String, index=True)
     cardbrandid = Column(String)
     externalid = Column(String)
-    local_date = Column(Date)
-    authorization_date = Column(Date)
+    local_date = Column(Date, index=True)
+    authorization_date = Column(Date, index=True)
     purchase_value = Column(DECIMAL(18, 2), nullable=False)
     clearing_debit = Column(DECIMAL(18, 2))
     installment_nbr = Column(DECIMAL(18, 2))

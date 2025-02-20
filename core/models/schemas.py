@@ -67,7 +67,8 @@ class ReportSchema(BaseModel):
         return value.strip() if isinstance(value, str) else value
 
 
-class TransactionSchema(BaseModel): #todo fazer validação para add transaction_type
+#todo: fazer validação para add transaction_type
+class TransactionSchema(BaseModel):
     source: str
     source_date: date
     dest_currency: int
@@ -76,7 +77,7 @@ class TransactionSchema(BaseModel): #todo fazer validação para add transaction
     cardbrandid: str
     externalid: str
     local_date: date
-    authorization_date: date
+    authorization_date: Optional[date] = None
     purchase_value: Decimal
     clearing_debit: Decimal
     installment_nbr: Decimal
@@ -115,6 +116,8 @@ class TransactionSchema(BaseModel): #todo fazer validação para add transaction
     clearing_confirm: Decimal
     clearing_add: Decimal
     clearing_credit: Decimal
+    line_segment: int
+    content_raw: Dict = {}
 
     @validator('*', pre=True)
     def parse_raw(cls, value):
@@ -122,4 +125,12 @@ class TransactionSchema(BaseModel): #todo fazer validação para add transaction
 
     @validator('source_date', 'local_date',  'authorization_date',  'clearing_settlement_date', pre=True)
     def parse_date(cls, value):
-        return datetime.strptime(value, "%y-%b-%d").date() if value else None
+        return datetime.strptime(value, "%Y-%m-%d").date() if value else None
+
+    @validator('content_raw')
+    def convert_decimals(cls,value):
+        if isinstance(value, dict):
+            for k, v in value.items():
+                if isinstance(v, Decimal):
+                    value[k] = float(v)
+        return value

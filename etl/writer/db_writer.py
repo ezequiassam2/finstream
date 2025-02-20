@@ -22,12 +22,12 @@ class DBWriter:
             amounts = [Amount(report_id=report.id, **amount) for amount in data['amounts']]
             session.bulk_save_objects(amounts)
             session.commit()
+            logger.info(f"Relatorio {report_id} salvo com sucesso.")
         except Exception as e:
             logger.error(f"Erro ao salvar relatorio {report_id}: {e}")
             session.rollback()
             raise
         finally:
-            logger.info(f"Relatorio {report_id} salvo com sucesso.")
             session.close()
 
     def save_transaction(self, data: dict):
@@ -37,10 +37,10 @@ class DBWriter:
             transaction = Transaction(**data)
             session.add(transaction)
             session.commit()
+            logger.info(f"Transação {mcc} salva com sucesso.")
         except Exception as e:
             logger.error(f"Erro ao salvar transação {mcc}: {e}")
             session.rollback()
             raise
         finally:
-            logger.info(f"Transação {mcc} salva com sucesso.")
             session.close()

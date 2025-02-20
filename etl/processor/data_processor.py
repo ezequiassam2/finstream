@@ -1,7 +1,5 @@
 from core.models.schemas import TransactionSchema
 from core.strategies import StrategyFactory
-from core.strategies import vss110, vss115, vss120, vss130, vss135, vss140, vss210, vss215, vss230, vss300, vss600, \
-    vss610, vss900, vss910, vss930  # noqa importando parsers
 from core.utils.logger import get_logger
 from core.utils.utils import get_report_id
 
@@ -30,8 +28,8 @@ class DataProcessor:
         mcc = content.get("mcc")
         try:
             logger.info(f"[Transação] Processando linha segmento={section_count} para o mcc={mcc}")
+            content.update({"line_segment": section_count, "content_raw": content.copy()})
             data = TransactionSchema(**content).model_dump()
-            data.update({"line_segment": section_count, "content_raw": content})
             return data
         except Exception as e:
             logger.error(f"[Transação] Erro ao processar segmento={section_count} para o mcc={mcc} -  {str(e)}")
