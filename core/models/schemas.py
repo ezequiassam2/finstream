@@ -116,8 +116,8 @@ class TransactionSchema(BaseModel):
     clearing_confirm: Decimal
     clearing_add: Decimal
     clearing_credit: Decimal
-    line_segment: int
-    content_raw: Dict = {}
+    section_num: int
+    raw: Dict = {}
 
     @validator('*', pre=True)
     def parse_raw(cls, value):
@@ -127,7 +127,7 @@ class TransactionSchema(BaseModel):
     def parse_date(cls, value):
         return datetime.strptime(value, "%Y-%m-%d").date() if value else None
 
-    @validator('content_raw')
+    @validator('raw')
     def convert_decimals(cls,value):
         if isinstance(value, dict):
             for k, v in value.items():

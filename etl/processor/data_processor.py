@@ -13,13 +13,13 @@ class DataProcessor:
         content_raw = content.get("raw")
         strategy_class = StrategyFactory.get_strategy(report_id)
         if not strategy_class:
-            logger.error(f"[Relatorio] Parse não encontrado para {report_id}")
+            logger.error(f"[Relatorio] Parse não encontrado para {report_id} segmento={section_num}")
             return {}
         try:
             strategy = strategy_class()
             logger.info(f"[Relatorio] Processando segmento={section_num} do report_id={report_id}")
             data = strategy.parse(content_raw).model_dump()
-            data.update({"file_segment": section_num, "content_raw": content_raw})
+            data.update({"section_num": section_num, "raw": content_raw})
             return data
         except Exception as e:
             logger.error(
@@ -29,11 +29,9 @@ class DataProcessor:
     def process_transaction(self, content: dict) -> dict:
         arn = content.get("section_id")
         section_num = content.get("section_num")
-        content_raw = content.get("raw")
         try:
             logger.info(f"[Transação] Processando linha segmento={section_num} para o section_id={arn}")
-            content.update({"line_segment": section_num, "content_raw": content_raw.copy()})
-            data = TransactionSchema(**content_raw).model_dump()
+            data = TransactionSchema(**content.get("raw"), **content).model_dump()
             return data
         except Exception as e:
             logger.error(f"[Transação] Erro ao processar segmento={section_num} para o section_id={arn} -  {str(e)}")

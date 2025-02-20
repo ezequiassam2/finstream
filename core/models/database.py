@@ -21,8 +21,8 @@ class Report(ModelRepository):
     funds_xfer_entity = Column(String)
     settlement_currency = Column(String(3), index=True)
     summary = Column(JSON)
-    file_segment = Column(Integer)
-    content_raw = Column(String)
+    section_num = Column(Integer)
+    raw = Column(String)
     amounts = relationship("Amount", back_populates="report", cascade="all, delete-orphan")
 
 
@@ -91,8 +91,8 @@ class Transaction(ModelRepository):
     clearing_confirm = Column(DECIMAL(18, 2))
     clearing_add = Column(DECIMAL(18, 2))
     clearing_credit = Column(DECIMAL(18, 2))
-    line_segment = Column(Integer)
-    content_raw = Column(JSON)
+    section_num = Column(Integer)
+    raw = Column(JSON)
 
 
 # Índices compostos
