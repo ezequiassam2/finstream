@@ -18,7 +18,7 @@ class DataProcessor:
         try:
             strategy = strategy_class()
             logger.info(f"[Relatorio] Processando segmento={section_num} do report_id={report_id}")
-            data = strategy.parse(content_raw).model_dump()
+            data = strategy.parse(content_raw).model_dump(exclude_none=True)
             data.update({"section_num": section_num, "raw": content_raw})
             return data
         except Exception as e:

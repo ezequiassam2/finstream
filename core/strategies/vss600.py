@@ -5,7 +5,7 @@ from core.strategies.base_strategy import ParsingStrategy
 
 
 @register_strategy("VSS-600")
-class VSS110Strategy(ParsingStrategy): #todo: mudar a forma como captura o nome da seção, fazer logica de linha anterior, fazer validação para não salvar cabeçalho da tabelha em section, identificar tabulação de não numericos
+class VSS600Strategy(ParsingStrategy):
     def parse_section(self, current_section:str, line:str, previous_indent:int):
         if re.match(r"(\s+[A-Z]+\s+){5}", line):
             return current_section, previous_indent
@@ -18,7 +18,10 @@ class VSS110Strategy(ParsingStrategy): #todo: mudar a forma como captura o nome 
             previous_indent = current_indent
         elif current_indent  != 0 and current_indent == previous_indent:
             split = current_section.split(' - ')
-            current_section = f"{''.join(split[:len(split) - 1])} - {line.strip()}"
+            if len(split) > 2:
+                current_section = f"{''.join(split[:len(split) - 1])} - {line.strip()}"
+            else:
+                current_section = f"{split[0]} - {line.strip()}"
         else:
             previous_indent = 0
             current_section = line.strip()

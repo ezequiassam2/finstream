@@ -33,19 +33,22 @@ class FileReader:
 
     def read_txt(self, file_path: str) -> Iterator[Dict[str, Any]]:
         """Lê TXT sequencial, mas conta seções em paralelo."""
+        def get_report_id(line: str) -> str:
+            return re.match(self.pattern_report_id, line).group(1) if re.match(self.pattern_report_id, line) else None
+
         total = self._count_txt_sections_parallel(file_path)
         with open(file_path, 'r', encoding=self.encoding) as f:
             buffer = []
             section_num = 0
             for line in f:
-                section_id = re.match(self.pattern_report_id, line).group(1) if re.match(self.pattern_report_id, line) else None
+                section_id = get_report_id(line)
                 if section_id and buffer:
-                        yield self._build_section(buffer, section_num, section_id, total)
+                        yield self._build_section(buffer, section_num, get_report_id(''.join(buffer)), total)
                         buffer = [line]
                         section_num += 1
                 else:
                     buffer.append(line)
-            yield self._build_section(buffer, section_num, section_id if section_id else re.match(self.pattern_report_id, ''.join(buffer)).group(1), total)
+            yield self._build_section(buffer, section_num, get_report_id(''.join(buffer)), total)
 
     def _count_txt_sections_parallel(self, file_path: str) -> int:
         """Conta seções em paralelo usando mmap."""

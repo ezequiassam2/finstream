@@ -14,7 +14,7 @@ class AmountSchema(BaseModel): #todo: adicionar classificação de transação .
     interchange_fee: Optional[Decimal] = None
     processing_charge: Optional[Decimal] = None
     settlement_amount: Optional[Decimal] = None
-    data: Optional[Dict] = {}
+    data: Optional[Dict] = None
 
     @validator('processing_count', 'transaction_amount', 'interchange_fee', 'processing_charge', 'settlement_amount',
                pre=True)

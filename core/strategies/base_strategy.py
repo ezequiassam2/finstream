@@ -34,7 +34,7 @@ class ParsingStrategy(ABC):
         return current_section, previous_indent
 
     def parse(self, content: str) -> ReportSchema:
-        header, amounts, current_section, previous_indent, page_report = {'summary': []}, [], None, 0, 0
+        header, amounts, current_section, previous_indent = {'summary': []}, [], None, 0
         for line in content.strip().splitlines():
             if not line.strip():
                 continue
