@@ -6,7 +6,7 @@ from pydantic import BaseModel, validator
 
 
 class AmountSchema(BaseModel): #todo: adicionar classificação de transação .php considerando a junção do section e label
-    section: str
+    section: Optional[str] = None
     label: str
     processing_date: Optional[datetime] = None
     processing_count: Optional[Decimal] = None

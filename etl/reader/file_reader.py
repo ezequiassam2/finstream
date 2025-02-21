@@ -1,7 +1,5 @@
 import mmap
-import os
 import re
-from concurrent.futures import ThreadPoolExecutor
 from typing import Iterator, Dict, Any
 
 import ijson
@@ -41,8 +39,7 @@ class FileReader:
             section_num = 0
             for line in f:
                 section_id = re.match(self.pattern_report_id, line).group(1) if re.match(self.pattern_report_id, line) else None
-                if section_id:
-                    if buffer:
+                if section_id and buffer:
                         yield self._build_section(buffer, section_num, section_id, total)
                         buffer = [line]
                         section_num += 1

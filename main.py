@@ -12,12 +12,12 @@ logger = get_logger(__name__)
 
 def main():
     processor = DataProcessor()
-    # writer = DBWriter(environ.get('DATABASE_URL'))
     writer = DBWriter(os.environ.get('DATABASE_URL'))
-    orchestrator = BatchOrchestrator()
+    orchestrator = BatchOrchestrator(1)
 
-    # files = ["/Users/ezequias.ferreira/Projects/_opt.exec/finstream/data/raw/EP747/EP747_20240705.TXT"]
-    files = ["/Users/ezequias.ferreira/Projects/_opt.exec/finstream/data/raw/VISA_CLEARING/VISA_TRANSACTIONAL_CLEARING_20240705_01.json"]
+    files = ["/Users/ezequias.ferreira/Projects/_opt.exec/finstream/data/raw/EP747/EP747_20240705.TXT"]
+    # files = ["/Users/ezequias.ferreira/Projects/_opt.exec/finstream/data/raw/EP747/VSS-600/VSS-600.TXT"]
+    # files = ["/Users/ezequias.ferreira/Projects/_opt.exec/finstream/data/raw/VISA_CLEARING/VISA_TRANSACTIONAL_CLEARING_20240705_01.json"]
     orchestrator.run(files, processor, writer)
 
 if __name__ == "__main__":
