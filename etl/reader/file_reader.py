@@ -25,13 +25,12 @@ class FileReader:
                 }
 
     def _count_json_items_parallel(self, file_path: str) -> int:
-        """Conta itens em paralelo."""
+        """Conta itens usando mmap."""
         count = 0
         with open(file_path, 'r', encoding='utf-8') as f:
-            items = ijson.items(f, 'item')
-            with ThreadPoolExecutor() as executor:
-                futures = [executor.submit(lambda: 1) for _ in items]
-                count = sum(f.result() for f in futures)
+            mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+            count = sum(1 for _ in ijson.items(mm, 'item'))
+            mm.close()
         return count
 
     def read_txt(self, file_path: str) -> Iterator[Dict[str, Any]]:
