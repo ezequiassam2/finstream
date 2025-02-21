@@ -5,7 +5,7 @@ from typing import List, Optional, Dict
 from pydantic import BaseModel, validator
 
 
-class AmountSchema(BaseModel):
+class AmountSchema(BaseModel): #todo: adicionar classificação de transação .php considerando a junção do section e label
     section: str
     label: str
     processing_date: Optional[datetime] = None
@@ -67,7 +67,6 @@ class ReportSchema(BaseModel):
         return value.strip() if isinstance(value, str) else value
 
 
-#todo: fazer validação para add transaction_type
 class TransactionSchema(BaseModel):
     source: str
     source_date: date
@@ -79,9 +78,9 @@ class TransactionSchema(BaseModel):
     local_date: date
     authorization_date: Optional[date] = None
     purchase_value: Decimal
-    clearing_debit: Decimal
-    installment_nbr: Decimal
-    clearing_installment: Decimal
+    clearing_debit: int
+    installment_nbr: int
+    clearing_installment: int
     installment_value_1: Decimal
     installment_value_n: Decimal
     clearing_value: Decimal
@@ -106,16 +105,17 @@ class TransactionSchema(BaseModel):
     pos_entry_mode: str
     clearing_files_row_id: int
     clearing_currency: int
-    clearing_boarding_fee: Decimal
+    clearing_boarding_fee: int
     clearing_settlement_date: date
-    clearing_presentation: Decimal
-    clearing_action_code: Decimal
-    clearing_total_partial_transaction: Decimal
-    clearing_flag_partial_settlement: Decimal
-    clearing_cancel: Decimal
-    clearing_confirm: Decimal
-    clearing_add: Decimal
-    clearing_credit: Decimal
+    clearing_presentation: int
+    clearing_action_code: int
+    clearing_total_partial_transaction: int
+    clearing_flag_partial_settlement: int
+    clearing_cancel: int
+    clearing_confirm: int
+    clearing_add: int
+    clearing_credit: int
+    transaction_type: Optional[str] = None
     section_num: int
     raw: Dict = {}
 
@@ -134,3 +134,26 @@ class TransactionSchema(BaseModel):
                 if isinstance(v, Decimal):
                     value[k] = float(v)
         return value
+
+    @validator('transaction_type', always=True)
+    def classify_transaction(cls, v, values):
+        slice_code = values.get('slice_code', '')
+        clearing_action_code = values.get('clearing_action_code', '')
+        operation_code = values.get('operation_code', '')
+        clearing_cancel = values.get('clearing_cancel', 0)
+        clearing_interchange_fee_sign = values.get('clearing_interchange_fee_sign', '')
+        operation_type = values.get('operation_type', 0)
+        clearing_debit = values.get('clearing_debit', False)
+        reason_code = values.get('reason_code', '')
+
+        if not slice_code:
+            return 'UNKNOWN'
+        if clearing_action_code == 11 and not operation_code and clearing_cancel == 1 and clearing_interchange_fee_sign == 'D':
+            return 'REVERSO-DE-COMPRA'
+        if operation_type == 1 and not operation_code:
+            return 'REVERSO-DE-SAQUE'
+        if operation_type in ('0', '1') and operation_code == '02':
+            return 'SAQUE' if clearing_debit else 'REVERSO-DE-SAQUE'
+        if operation_code == '01' and reason_code < '2000':
+            return 'REVERSO-DE-COMPRA' if not clearing_debit else 'COMPRA'
+        return 'UNKNOWN-99'

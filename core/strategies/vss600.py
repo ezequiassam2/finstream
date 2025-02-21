@@ -5,7 +5,7 @@ from core.strategies.base_strategy import ParsingStrategy
 
 
 @register_strategy("VSS-600")
-class VSS110Strategy(ParsingStrategy): #todo: mudar a forma como captura o nome da seção, fazer logica de linha anterior, fazer validação para não salvar cabeçalho da tabelha em section
+class VSS110Strategy(ParsingStrategy): #todo: mudar a forma como captura o nome da seção, fazer logica de linha anterior, fazer validação para não salvar cabeçalho da tabelha em section, identificar tabulação de não numericos
     def parse_body(self, line: str, amounts: list, current_section: str) -> None:
         parts = re.split(r'\s{2,}', line.strip())
         if len(parts) <= 1:
