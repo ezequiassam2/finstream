@@ -15,9 +15,13 @@ def main():
     writer = DBWriter(os.environ.get('DATABASE_URL'))
     orchestrator = BatchOrchestrator()
 
-    files = ["/Users/ezequias.ferreira/Projects/_opt.exec/finstream/data/raw/EP747/EP747_20240705.TXT"]
-    # files = ["/Users/ezequias.ferreira/Projects/_opt.exec/finstream/data/raw/EP747/VSS-600/VSS-600.TXT"]
-    # files = ["/Users/ezequias.ferreira/Projects/_opt.exec/finstream/data/raw/VISA_CLEARING/VISA_TRANSACTIONAL_CLEARING_20240705_01.json"]
+    base_dir = os.path.dirname(__file__)
+    relative_path = "data/raw/EP747/EP747_20240705.TXT"
+    file_path = os.path.join(base_dir, relative_path)
+
+    files = [file_path]
+    # files = [os.path.join(base_dir, "data/raw/EP747/VSS-600/VSS-600.TXT")]
+    # files = [os.path.join(base_dir, "data/raw/VISA_CLEARING/VISA_TRANSACTIONAL_CLEARING_20240705_01.json")]
     orchestrator.run(files, processor, writer)
 
 if __name__ == "__main__":

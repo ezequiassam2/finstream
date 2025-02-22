@@ -70,6 +70,7 @@ class DBWriter:
                      .options(joinedload(Amount.report))
                      .filter(Amount.section == None)
                      .filter(Amount.created_at >= start_time)
+                     .filter(Report.page > 1)
                      .order_by(Report.reporting_for, Report.page, Amount.index))
             results = query.all()
             return results
@@ -99,6 +100,7 @@ class DBWriter:
             amounts = (session.query(Amount)
                        .join(Report, Report.id == Amount.report_id)
                        .filter(Amount.transaction_class == None)
+                       .filter(Amount.section != None)
                        .all())
             for amount in amounts:
                 split = amount.section.split(' - ')

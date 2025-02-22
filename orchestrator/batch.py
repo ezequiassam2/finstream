@@ -126,17 +126,22 @@ class BatchOrchestrator:
 
     def __run_report_update(self, processor: DataProcessor, writer: DBWriter) -> None:
         """
-        Atualiza registros que tem a seção nula.
+        Atualiza registros que tem a seção nula e classifica as transações.
         """
-        logger.info(f"Atualizando seções nulas...")
-        amounts = writer.get_amounts_with_null_section(datetime.datetime.fromtimestamp(self.start_time))
-        for amount in amounts:
-            report_current = amount.report
-            report_old = writer.get_report(report_current.report_id, report_current.reporting_for, report_current.page - 1)
-            section = processor.process_last_section(report_old)
-            if section:
-                writer.update_section(amount.id, section)
-        writer.update_transaction_class()
+        try:
+            logger.info(f"Atualizando seções nulas...")
+            amounts = writer.get_amounts_with_null_section(datetime.datetime.fromtimestamp(self.start_time))
+            for amount in amounts:
+                report_current = amount.report
+                report_old = writer.get_report(report_current.report_id, report_current.reporting_for,
+                                               report_current.page - 1)
+                section = processor.process_last_section(report_old)
+                if section:
+                    writer.update_section(amount.id, section)
+            logger.info(f"Classificando transações...")
+            writer.update_transaction_class()
+        except Exception as e:
+            logger.error(f"Falha ao atualizar seções: {str(e)}")
 
     def run(self, files: List[str], processor: DataProcessor, writer: DBWriter) -> None:
         """
