@@ -3,6 +3,7 @@ from sqlalchemy.orm import sessionmaker, joinedload
 
 from core.models.database import Report, Amount, Base, Transaction
 from core.utils.logger import get_logger
+from core.utils.utils import classify_transaction
 
 logger = get_logger(__name__)
 
@@ -87,6 +88,29 @@ class DBWriter:
             logger.info(f"Seção atualizada para {section} para o amount_id {amount_id}")
         except Exception as e:
             logger.error(f"Erro ao atualizar a seção para o amount_id {amount_id}: {e}")
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def update_transaction_class(self):
+        session = self.Session()
+        try:
+            amounts = (session.query(Amount)
+                       .join(Report, Report.id == Amount.report_id)
+                       .filter(Amount.transaction_class == None)
+                      .filter(Report.report_id == "VSS-600")
+                       .all())
+            for amount in amounts:
+                split = amount.section.split(' - ')
+                ep  = f"{split[1]} {amount.label}" if len(split) > 1 else  f"{amount.section} {amount.label}"
+                transaction_class = classify_transaction(ep)
+                if transaction_class:
+                    amount.transaction_class = transaction_class
+            session.commit()
+            logger.info(f"Atualização do transaction_class executada para {len(amounts)} registros")
+        except Exception as e:
+            logger.error(f"Erro ao atualizar transaction_class: {e}")
             session.rollback()
             raise
         finally:
