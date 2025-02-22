@@ -99,7 +99,6 @@ class DBWriter:
             amounts = (session.query(Amount)
                        .join(Report, Report.id == Amount.report_id)
                        .filter(Amount.transaction_class == None)
-                      .filter(Report.report_id == "VSS-600")
                        .all())
             for amount in amounts:
                 split = amount.section.split(' - ')

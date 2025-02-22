@@ -21,6 +21,8 @@ class ParsingStrategy(ABC):
                 header.get('summary').append(match.group("summary").strip())
 
     def parse_section(self, current_section: str, line: str, previous_indent: int):
+        if re.match(r"(\s+[A-Z]+\s+){3,}", line):
+            return current_section, previous_indent
         current_indent = len(line) - len(line.lstrip())
         if current_indent > previous_indent:
             if current_section:
@@ -28,6 +30,12 @@ class ParsingStrategy(ABC):
             else:
                 current_section = line.strip()
             previous_indent = current_indent
+        elif current_indent != 0 and current_indent == previous_indent:
+            split = current_section.split(' - ')
+            if len(split) > 2:
+                current_section = f"{''.join(split[:len(split) - 1])} - {line.strip()}"
+            else:
+                current_section = f"{split[0]} - {line.strip()}"
         else:
             previous_indent = 0
             current_section = line.strip()

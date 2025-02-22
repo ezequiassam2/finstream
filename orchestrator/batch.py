@@ -134,7 +134,8 @@ class BatchOrchestrator:
             report_current = amount.report
             report_old = writer.get_report(report_current.report_id, report_current.reporting_for, report_current.page - 1)
             section = processor.process_last_section(report_old)
-            writer.update_section(amount.id, section)
+            if section:
+                writer.update_section(amount.id, section)
         writer.update_transaction_class()
 
     def run(self, files: List[str], processor: DataProcessor, writer: DBWriter) -> None:

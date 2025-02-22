@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 def main():
     processor = DataProcessor()
     writer = DBWriter(os.environ.get('DATABASE_URL'))
-    orchestrator = BatchOrchestrator(1)
+    orchestrator = BatchOrchestrator()
 
     files = ["/Users/ezequias.ferreira/Projects/_opt.exec/finstream/data/raw/EP747/EP747_20240705.TXT"]
     # files = ["/Users/ezequias.ferreira/Projects/_opt.exec/finstream/data/raw/EP747/VSS-600/VSS-600.TXT"]
