@@ -4,6 +4,9 @@ from typing import Iterator, Dict, Any
 
 import ijson
 
+from core.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 class FileReader:
     def __init__(self, encoding: str = 'utf-8'):
@@ -27,8 +30,13 @@ class FileReader:
         count = 0
         with open(file_path, 'r', encoding='utf-8') as f:
             mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-            count = sum(1 for _ in ijson.items(mm, 'item'))
-            mm.close()
+            try:
+                for _ in ijson.items(mm, 'item'):
+                    count += 1
+            except ijson.common.JSONError as e:
+                logger.info(f"Error parsing JSON at position {mm.tell()}: {e}")
+            finally:
+                mm.close()
         return count
 
     def read_txt(self, file_path: str) -> Iterator[Dict[str, Any]]:
