@@ -50,3 +50,14 @@ class ParsingStrategy(ABC):
 
         report = {**header, 'amounts': amounts}
         return ReportSchema(**report)
+
+    def parser_last_section(self, raw_content: str) -> str:
+        last_section, previous_indent = None, 0
+        for line in raw_content.strip().splitlines():
+            if not line.strip():
+                continue
+            if '***' in line:
+                break
+            if re.match(self.SECTION_PATTERN, line):
+                last_section, previous_indent = self.parse_section(last_section, line, previous_indent)
+        return last_section

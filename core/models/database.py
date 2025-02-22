@@ -30,6 +30,7 @@ class Amount(ModelRepository):
     __tablename__ = 'amounts'
     id = Column(BigInteger, primary_key=True)
     report_id = Column(Integer, ForeignKey('reports.id', ondelete="CASCADE"), index=True)
+    transaction_class = Column(String, index=True)
     section = Column(String, index=True)
     label = Column(String)
     processing_date = Column(DateTime, index=True)

@@ -1,3 +1,4 @@
+import datetime
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -36,11 +37,11 @@ class BatchOrchestrator:
         self.done = threading.Event()
         self.start_time: Optional[float] = None
         self.strategies = {
-            'txt': {'process': self._process_txt_segment, 'reader': self.file_reader.read_txt},
-            'json': {'process': self._process_json_file, 'reader': self.file_reader.read_json}
+            'txt': {'process': self.__process_txt_segment, 'reader': self.file_reader.read_txt},
+            'json': {'process': self.__process_json_file, 'reader': self.file_reader.read_json}
         }
 
-    def _get_strategy(self, file_path: str, run: str = 'process') -> Optional[Callable]:
+    def __get_strategy(self, file_path: str, run: str = 'process') -> Optional[Callable]:
         """
         Obtém a estratégia de processamento com base na extensão do arquivo.
         """
@@ -50,7 +51,7 @@ class BatchOrchestrator:
             raise ValueError(f"Estratégia não encontrada para o arquivo {file_path}")
         return strategy.get(run)
 
-    def _update_progress(self, file_path: str, total=0) -> None:
+    def __update_progress(self, file_path: str, total=0) -> None:
         """Atualiza o progresso de processamento de um arquivo.."""
         with self.lock:
             if self.progress.get(file_path) is None:
@@ -58,7 +59,7 @@ class BatchOrchestrator:
                 logger.info(f"Start Progresso {file_path.split('/')[-1]}: {0}/{total} ({0:.1f}%)")
             self.progress[file_path]['processed'] += 1
 
-    def _log_progress(self) -> None:
+    def __log_progress(self) -> None:
         """Loga o progresso atual em intervalos regulares."""
         while not self.done.is_set():
             time.sleep(5)
@@ -69,7 +70,7 @@ class BatchOrchestrator:
                     percent = (processed / total * 100) if total > 0 else 0
                     logger.info(f"Progresso {file_path.split('/')[-1]}: {processed}/{total} ({percent:.1f}%)")
 
-    def _process_txt_segment(self, content: dict, processor: DataProcessor, writer: DBWriter) -> None:
+    def __process_txt_segment(self, content: dict, processor: DataProcessor, writer: DBWriter) -> None:
         """
         Processa um segmento de arquivo TXT.
         """
@@ -77,7 +78,7 @@ class BatchOrchestrator:
         if processed_data:
             writer.save_report(processed_data)
 
-    def _process_json_file(self, content: dict, processor: DataProcessor, writer: DBWriter) -> None:
+    def __process_json_file(self, content: dict, processor: DataProcessor, writer: DBWriter) -> None:
         """
         Processa um segmento de arquivo JSON.
         """
@@ -86,7 +87,7 @@ class BatchOrchestrator:
             writer.save_transaction(processed_data)
 
     @retry(max_attempts=3, delay=1)
-    def _consumer(self, processor: DataProcessor, writer: DBWriter) -> None:
+    def __consumer(self, processor: DataProcessor, writer: DBWriter) -> None:
         """
         Consome tarefas da fila e processa cada seção com a estratégia apropriada.
         """
@@ -97,8 +98,8 @@ class BatchOrchestrator:
                 break
             file_path, content, section_id = task
             try:
-                self._update_progress(file_path, content.get('total', 0))
-                process = self._get_strategy(file_path)
+                self.__update_progress(file_path, content.get('total', 0))
+                process = self.__get_strategy(file_path)
                 process(content, processor, writer)
             except Exception as e:
                 if not self.task_queue.empty():
@@ -106,7 +107,7 @@ class BatchOrchestrator:
             finally:
                 self.task_queue.task_done()
 
-    def _producer(self, files: List[str]) -> None:
+    def __producer(self, files: List[str]) -> None:
         """
         Lê arquivos e coloca os dados na fila para serem processados pelos consumidores.
         """
@@ -115,7 +116,7 @@ class BatchOrchestrator:
                 logger.info(f"Fim da importação do arquivo: {file_path}")
                 break
             try:
-                reader = self._get_strategy(file_path, 'reader')
+                reader = self.__get_strategy(file_path, 'reader')
                 logger.info(f"Importando arquivo: {file_path}")
                 for content in reader(file_path):
                     self.task_queue.put((file_path, content, content.get("section_id", 0)))
@@ -123,21 +124,33 @@ class BatchOrchestrator:
                 logger.error(f"Falha ao ler {file_path}: {str(e)}")
                 self.done.set()
 
+    def __run_report_update(self, processor: DataProcessor, writer: DBWriter) -> None:
+        """
+        Atualiza registros que tem a seção nula.
+        """
+        logger.info(f"Atualizando seções nulas...")
+        amounts = writer.get_amounts_with_null_section(datetime.datetime.fromtimestamp(self.start_time))
+        for amount in amounts:
+            report_current = amount.report
+            report_old = writer.get_report(report_current.report_id, report_current.reporting_for, report_current.page - 1)
+            section = processor.process_last_section(report_old)
+            writer.update_section(amount.id, section)
+
     def run(self, files: List[str], processor: DataProcessor, writer: DBWriter) -> None:
         """
         Inicia o processamento dos arquivos em lote.
         """
         self.start_time = time.time()
-        progress_thread = threading.Thread(target=self._log_progress)
+        progress_thread = threading.Thread(target=self.__log_progress)
         progress_thread.start()
 
         try:
             with ThreadPoolExecutor(max_workers=self.max_consumers) as executor:
                 # Inicia consumidores
-                consumers = [executor.submit(self._consumer, processor, writer) for _ in range(self.max_consumers)]
+                consumers = [executor.submit(self.__consumer, processor, writer) for _ in range(self.max_consumers)]
 
                 # Inicia produtor em thread separada
-                producer_thread = threading.Thread(target=self._producer, args=(files,))
+                producer_thread = threading.Thread(target=self.__producer, args=(files,))
                 producer_thread.start()
                 producer_thread.join()
 
@@ -147,6 +160,7 @@ class BatchOrchestrator:
 
                 # Aguarda conclusão da fila
                 self.task_queue.join()
+                self.__run_report_update(processor, writer)
                 self.done.set()
                 for future in consumers:
                     future.result()

@@ -1,7 +1,8 @@
 from core.models.schemas import TransactionSchema
 from core.strategies import StrategyFactory
+from core.strategies import vss110, vss115, vss120, vss130, vss135, vss140, vss210, vss215, vss230, vss300, vss600, \
+    vss610, vss900, vss910, vss930  # noqa
 from core.utils.logger import get_logger
-from core.strategies import vss110, vss115, vss120, vss130, vss135, vss140, vss210, vss215, vss230, vss300, vss600, vss610, vss900, vss910, vss930  # noqa
 
 logger = get_logger(__name__)
 
@@ -36,3 +37,8 @@ class DataProcessor:
         except Exception as e:
             logger.error(f"[Transação] Erro ao processar segmento={section_num} para o section_id={arn} -  {str(e)}")
             raise
+
+    def process_last_section(self, report_old):
+        strategy_class = StrategyFactory.get_strategy(report_old.report_id)
+        strategy = strategy_class()
+        return strategy.parser_last_section(report_old.raw)
