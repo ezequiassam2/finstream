@@ -1,0 +1,21 @@
+REPORT ID:  VSS-110                                         VISANET SETTLEMENT SERVICE                        PAGE:              1  
+ REPORTING FOR:      1234567890 010203 DESAFIO                 BRAZIL CIP NNSS SERVICE                         PROC DATE:   05JUL24  
+ ROLLUP TO:          9876543210 EMISSOR DESAFIO              SETTLEMENT SUMMARY REPORT                         REPORT DATE: 05JUL24  
+ FUNDS XFER ENTITY:  9876543210 EMISSOR DESAFIO                                                                                      
+                                                                                                                                     
+ SETTLEMENT CURRENCY:  BRL                                                                                                           
+                                                                                                                                     
+                                                                                                                                     
+                                                                       CREDIT                     DEBIT                     TOTAL    
+                                              COUNT                    AMOUNT                    AMOUNT                    AMOUNT    
+                                                                                                                                     
+ INTERCHANGE VALUE                                                                                                                   
+                                                                                                                                     
+    TOTAL ACQUIRER                                0                      0.00                      0.00                      28,081,919.39DB
+    TOTAL ISSUER                            334,544                350,719.10             28,432,638.49             28,081,919.39DB  
+    TOTAL OTHER                                   0                      0.00                      0.00                      0.00    
+                                                                                                                                     
+    TOTAL INTERCHANGE VALUE                 334,544                350,719.10             28,432,638.49             28,081,919.39DB  
+
+                                                                                                                                     
+                                                   *** END OF VSS-110 REPORT ***                                                     

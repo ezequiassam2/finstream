@@ -1,13 +1,15 @@
 version: '3.8'
 
 services:
-  batch:
-    build: .
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: finstream_batch
     depends_on:
       - db
     environment:
-      - DATABASE_URL=postgres://postgres:password@db:5432/finstream
+      - DATABASE_URL=postgresql://postgres:password@db:5432/finstream
 
   db:
     image: postgres:13

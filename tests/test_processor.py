@@ -1,15 +1,34 @@
-import pytest
-from core.strategies.vss110 import VSS110Strategy
+import json
+import os
 
-def test_vss110_parsing():
-    strategy = VSS110Strategy()
-    sample_content = """  
-    REPORT ID:  VSS-110  
-    REPORTING FOR: 2023-10  
-    *** INTERCHANGE VALUE ***  
-    TOTAL ISSUER               334,544       350,719.10     28,432,638.49     28,081,919.39DB  
-    """
-    header = strategy.parse_header(sample_content)
-    assert header.report_id == "VSS-110"
-    amounts = strategy.parse_amounts(sample_content)
-    assert amounts[0].total_amount == Decimal("-28081919.39")
+from etl.processor.data_processor import DataProcessor
+
+def read_file_content(file_name):
+    base_dir = os.path.dirname(__file__)
+    with open(os.path.join(base_dir, f"resources/{file_name}"), 'r') as file:
+        return file.read()
+
+def test_process_report():
+    processor = DataProcessor()
+    raw_content = read_file_content("raw_vss110.txt")
+    content = {
+        "section_id": "VSS-110",
+        "section_num": 1,
+        "raw": raw_content
+    }
+    result = processor.process_report(content)
+    assert result['report_id'] == "VSS-110"
+    assert result['amounts'][0]['data']['total_amount'] == -28081919.39
+
+
+def test_process_transaction():
+    processor = DataProcessor()
+    raw_content = read_file_content("raw_clearing.json")
+    content = {
+        "section_id": "123456",
+        "section_num": 1,
+        "raw": json.loads(raw_content)[0]
+    }
+    result = processor.process_transaction(content)
+    assert result['arn'] == '33478'
+    assert result['purchase_value'] == 21.0
