@@ -27,7 +27,7 @@ class VSS600Strategy(ParsingStrategy):
             current_section = line.strip()
         return current_section, previous_indent
 
-    def parse_body(self, line: str, amounts: list, current_section: str) -> None:
+    def parse_body(self, line: str, amounts: list, current_section: str, line_index: int) -> None:
         parts = re.split(r'\s{2,}', line.strip())
         if len(parts) <= 1:
             return
@@ -42,7 +42,8 @@ class VSS600Strategy(ParsingStrategy):
                 "transaction_amount": self.get_part(parts, 3),
                 "interchange_fee": self.get_part(parts, 4),
                 "processing_charge": self.get_part(parts, 5),
-                "settlement_amount": self.get_part(parts, 6)
+                "settlement_amount": self.get_part(parts, 6),
+                "index": line_index
             })
 
     def get_part(self, parts, index):

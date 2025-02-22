@@ -11,7 +11,7 @@ class GenericStrategy(ParsingStrategy):
         self.last_index = index_insert_last
         self.index_insert = index_insert
 
-    def parse_body(self, line: str, amounts: list, current_section: str) -> None:
+    def parse_body(self, line: str, amounts: list, current_section: str, line_index: int) -> None:
         parts = re.split(r'\s{2,}', line.strip())
         label_section = parts.pop(0).strip() if parts else None
         while len(parts) < self.len_columns:
@@ -25,7 +25,7 @@ class GenericStrategy(ParsingStrategy):
             if parts[i]:
                 data_parsed[label.lower()] = parts[i].strip()
 
-        amounts.append({"section": current_section, "label": label_section, "data": data_parsed})
+        amounts.append({"section": current_section, "label": label_section, "data": data_parsed, "index": line_index})
 
     def parse_header(self, line: str, header: dict) -> None:
         super().parse_header(line, header)

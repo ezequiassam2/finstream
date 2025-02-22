@@ -10,7 +10,7 @@ class ParsingStrategy(ABC):
     SECTION_PATTERN = r"^\s?(\d{2}\-)?[A-Z\s]+$"
 
     @abstractmethod
-    def parse_body(self, line: str, amounts: list, current_section: str) -> None:
+    def parse_body(self, line: str, amounts: list, current_section: str, line_index: int) -> None:
         pass
 
     def parse_header(self, line: str, header: dict) -> None:
@@ -34,7 +34,7 @@ class ParsingStrategy(ABC):
         return current_section, previous_indent
 
     def parse(self, content: str) -> ReportSchema:
-        header, amounts, current_section, previous_indent = {'summary': []}, [], None, 0
+        header, amounts, current_section, previous_indent, line_index = {'summary': []}, [], None, 0, 0
         for line in content.strip().splitlines():
             if not line.strip():
                 continue
@@ -45,7 +45,8 @@ class ParsingStrategy(ABC):
             elif re.match(self.SECTION_PATTERN, line):
                 current_section, previous_indent = self.parse_section(current_section, line, previous_indent)
             elif any(c.isdigit() for c in line):
-                self.parse_body(line, amounts, current_section)
+                self.parse_body(line, amounts, current_section, line_index)
+                line_index += 1
 
         report = {**header, 'amounts': amounts}
         return ReportSchema(**report)

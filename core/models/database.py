@@ -14,14 +14,14 @@ class Report(ModelRepository):
     id = Column(BigInteger, primary_key=True)
     report_id = Column(String(50), index=True)
     reporting_for = Column(String, index=True)
-    page = Column(Integer)
+    page = Column(Integer, index=True)
     proc_date = Column(DateTime, index=True)
     rollup_to = Column(String)
     report_date = Column(DateTime, index=True)
     funds_xfer_entity = Column(String)
     settlement_currency = Column(String(3), index=True)
     summary = Column(JSON)
-    section_num = Column(Integer)
+    section_num = Column(Integer, index=True)
     raw = Column(String)
     amounts = relationship("Amount", back_populates="report", cascade="all, delete-orphan")
 
@@ -39,6 +39,7 @@ class Amount(ModelRepository):
     processing_charge = Column(DECIMAL(18, 2))
     settlement_amount = Column(DECIMAL(18, 2))
     data = Column(JSON)
+    index = Column(Integer)
     report = relationship("Report", back_populates="amounts")
 
 class Transaction(ModelRepository):
